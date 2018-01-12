@@ -197,7 +197,7 @@ class spy:
                     Rhocor = 0.0
                     epscor = 0.0
                     Pcore = 0.0
-                    Tcore = 0.0
+                    Tcore = 0.0					
                 elif (r[i]<0.02*Rs and M_r[i]<0.01*Ms and L_r[i]<0.1*Ls):
                     rhocor = M_r[i]/((4./3.)*np.pi*r[i]**3)
                     rhomax = 10.*(rho[i]/rho[im1])*rho[i]
@@ -220,6 +220,9 @@ class spy:
                     deltar = -Rs/5000.
                     idrflg = 2
                 istop = i
+                if (i % 50) == 0:
+#                    print(i,deltar)				
+                     print(i,deltar,round(r[i],1),round(M_r[i],1),round(L_r[i],1),round(r[i]/Rs,1),round(M_r[i]/Ms,1),round(L_r[i]/Ls,1))
             
 # generate warning messages for the central conditions
 
@@ -228,7 +231,7 @@ class spy:
         Pcore  = P[istop] + 2.0/3.0*np.pi*self.G*rhocor**2*r[istop]**2
         Tcore  = Pcore*mu*self.m_H/(rhocor*self.k_B)
 
-
+        print('Igoof: ', Igoof)
         if (Igoof != 0):
             if (Igoof == -1):
                 print("Sorry to be the bearer of bad news, but your model \
@@ -243,33 +246,33 @@ class spy:
                 if (rhocor > 1.e10):
                     print("It looks like you will need a degenerate neutron \
                            gas and general relativity to solve this core")
-                elif (Igoof == 2):
-                    print("It looks like you are getting close, however there are \
-                           still a few minor errors.")
-                    print("The core epsilon seems a bit off, epsilon should \
+            elif (Igoof == 2):
+                print("It looks like you are getting close, however there are \
+                       still a few minor errors.")
+                print("The core epsilon seems a bit off, epsilon should \
                            vary smoothly near the center. The value calculated \
                            for the last zone was eps = ",epsilon[istop])
-                elif (Igoof == 3):
-                    print("It looks like you are getting close, however there are \
-                           still a few minor errors")
-                    print("Your extrapolated central temperature is too low, \
-                           a little more fine tuning ought to do it. The value \
-                           calculated for the last zone was T = ",T[istop])
-                elif (Igoof == 4):
-                    print("Sorry to be the bearer of bad news, but your model \
-                           has some problems.")
-                    print("You created a star with a hole in the center!")
-                elif (Igoof == 5):
-                    print("Sorry to be the bearer of bad news, but your model \
-                           has some problems.")
-                    print("This star has a negative central luminosity!")
-                elif (Igoof == 6):
-                    print("Sorry to be the bearer of bad news, but your model \
-                           has some problems.")
-                    print("You hit the center before the mass and/or luminosity \
-                           were depleted.")
-                else:
-                    print("CONGRATULATIONS, I THINK YOU FOUND IT!")
+            elif (Igoof == 3):
+                print("It looks like you are getting close, however there are \
+                       still a few minor errors")
+                print("Your extrapolated central temperature is too low, \
+                       a little more fine tuning ought to do it. The value \
+                       calculated for the last zone was T = ",T[istop])
+            elif (Igoof == 4):
+                print("Sorry to be the bearer of bad news, but your model \
+                       has some problems.")
+                print("You created a star with a hole in the center!")
+            elif (Igoof == 5):
+                print("Sorry to be the bearer of bad news, but your model \
+                       has some problems.")
+                print("This star has a negative central luminosity!")
+            elif (Igoof == 6):
+                print("Sorry to be the bearer of bad news, but your model \
+                       has some problems.")
+                print("You hit the center before the mass and/or luminosity \
+                       were depleted.")
+            else:
+                print("CONGRATULATIONS, I THINK YOU FOUND IT!")
                 
 
         Rcrat = r[istop]/Rs
@@ -282,9 +285,9 @@ class spy:
         if (Lcrat < -9.999):
             Lcrat = -9.999
 
-        print("The surface conditions are: ")
+        print("The surface conditions are (Msolar,Mcrat,Rsolar,Rcrat,Lsolar,Lcrat,Te): ")
         print(self.Msolar,Mcrat,Rsolar,Rcrat,self.Lsolar, Lcrat,self.Te)
-        print("The central conditions are: ")
+        print("The central conditions are (rhocor,X,Tcore,Y,Pcore,Z,epscor,dlPdlT[istop]): ")
         print(rhocor,self.X,Tcore,self.Y,Pcore,self.Z,epscor,dlPdlT[istop])
 
         fileout = open('starmodspy.out','w')
@@ -456,7 +459,7 @@ class spy:
 
     def rr2mm(self,position,rr,mr):
         rm = np.interp(position,rr,mr/self.Msun)
-        print(rr[990],mr[990]/self.Msun)
+#        print(rr[990],mr[990]/self.Msun)
         return np.round(rm,3)
     
 
