@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import csv
+import pandas as pd
 
 class spy:
 
@@ -18,7 +19,7 @@ class spy:
     m_H = 1.673534e-24  # mass of hydrogen atom
     gamma = 1.6666667   # 5./3. adiabatic gamma for a monoatomic gas
     gamrat = gamma/(gamma-1.)
-    tog_bf = 0.01       # bound-free opacity constant (guillotine/gaunt)
+#    tog_bf = 0.01       # bound-free opacity constant (guillotine/gaunt)
     g_ff = 1.0          # free-free opactity gaunt factor (assummed 1)
     Rsun = 6.9599e10    
     Msun = 1.989e33   
@@ -51,7 +52,7 @@ class spy:
 
         Ms = self.Msolar*self.Msun
         Ls = self.Lsolar*self.Lsun
-        Rs = np.sqrt(Ls/4.*np.pi*self.sigma)/self.Te
+        Rs = np.sqrt(Ls/(4.*np.pi*self.sigma))/self.Te**2
         Rsolar = Rs/self.Rsun
 
         deltar = -Rs/1000.
@@ -60,7 +61,8 @@ class spy:
         dlPlim = 99.
         
         mu = 1.0/(2.*self.X+0.75*self.Y+0.5*self.Z)
-
+        tog_bf = 0.01
+        
 #        gamrat = self.gamma/(self.gamma-1.0)
 
         T0 = 0.
@@ -91,7 +93,7 @@ class spy:
             if cnstmass: 
                 ip1 = i + 1
                 smdl = self.STARTMDL(deltar,mu,Rs,r[i],M_r[i], \
-                                     L_r[i],self.tog_bf,irc)
+                                     L_r[i],tog_bf,irc)
             
                 r.append(smdl[0])
                 P.append(smdl[1])
@@ -104,7 +106,12 @@ class spy:
                 rho.append(eossol[0])
                 kappa.append(eossol[1])
                 epsilon.append(eossol[2])
-            
+                tog_bf = eossol[3]
+
+
+                print(i,rho[i],T[i],P[i])
+                
+                
                 ierr = eossol[4]
                 if (ierr != 0):
                     print("Error in EOS during STARTMDL: ",i,r[i]/Rs,rho[i], \
@@ -131,10 +138,10 @@ class spy:
                 if (ip1 > 1):
                     ip1 = ip1 - 1
                     cnstmass = False
-                
-        while (Igoof == -1):
-            Nsrtp1 = ip1 + 1
-            for i in range(Nsrtp1,self.Nstop):
+                    
+        Nsrtp1 = ip1 + 1
+        for i in range(Nsrtp1,self.Nstop):
+            if (Igoof == -1):
                 im1 = i - 1
                 f_im1 = []
                 dfdr  = []
@@ -151,7 +158,7 @@ class spy:
 
                 f_i  = rgsol[0]
                 ierr = rgsol[1]
-                if (ierr == 0):
+                if (ierr != 0):
                     print("The problem occurred in the Runge-Kutta routine")
                     print(r[im1]/Rs, rho[im1],M_r[im1]/Ms,kappa[im1],\
                           T[im1],epsilon[im1],P[im1],L_r[im1]/Ls)
@@ -220,9 +227,10 @@ class spy:
                     deltar = -Rs/5000.
                     idrflg = 2
                 istop = i
-                if (i % 50) == 0:
-#                    print(i,deltar)				
-                     print(i,deltar,round(r[i],1),round(M_r[i],1),round(L_r[i],1),round(r[i]/Rs,1),round(M_r[i]/Ms,1),round(L_r[i]/Ls,1))
+                if (i % 1) == 0:
+#                    print(i,deltar)
+		    print(i,rho[i],T[i],P[i],L_r[i], Igoof)
+#                    print(i,deltar,round(r[i],1),round(M_r[i],1),round(L_r[i],1),round(r[i]/Rs,1),round(M_r[i]/Ms,1),round(L_r[i]/Ls,1))
             
 # generate warning messages for the central conditions
 
@@ -292,7 +300,7 @@ class spy:
 
         fileout = open('starmodspy.out','w')
         results = csv.writer(fileout,delimiter=' ')
-        results.writerow(["r","Qm","L_r","M_r","T","P","rho","kap","eps","clim","rcf","dlPdlT"])
+        results.writerow(["r","Qm","L_r","M_r","TT","PP","rho","kap","eps","clim","rcf","dlPdlT"])
 
         for ic in range(istop):
             i = istop - ic
@@ -337,7 +345,8 @@ class spy:
         else:
             T_ip1 = self.G*M_rip1*mu*self.m_H/self.k_B*(1.0/r - 1.0/Rs)/self.gamrat
             P_ip1 = kPad*T_ip1**self.gamrat            
-    
+
+#        print(irc,tog_bf,self.g_ff,Afac,A_bf,A_ff,T_ip1,P_ip1,self.G,M_rip1,L_rip1,mu,self.m_H,self.k_B,r,Rs,r_i,deltar)    
         sol = [r,P_ip1,M_rip1,L_rip1,T_ip1]
         return sol
 
@@ -346,9 +355,10 @@ class spy:
         if (T <= 0.0 or P <= 0.0):
             print("Error in EOS T or P: ",izone, T, P)
 
-        Prad = self.a*(T**4)/3.
+        Prad = (self.a*T**4.)/3.
         Pgas = P - Prad
         rho  = (mu*self.m_H/self.k_B)*(Pgas/T)
+#        print(izone,P,T,Prad,Pgas,rho,mu,self.m_H,self.k_B,self.a)
 
         if (rho < 0.0):
             ierr = 1
@@ -446,7 +456,7 @@ class spy:
         rho = eossol[0]
         kappa = eossol[1]
         epsilon = eossol[2]
-        ierr = eossol[3]
+        ierr = eossol[4]
         
         dfdr = []
         dfdr.append(self.dPdr(r,M_r,rho))
@@ -459,12 +469,24 @@ class spy:
 
     def rr2mm(self,position,rr,mr):
         rm = np.interp(position,rr,mr/self.Msun)
+        print(rr[0:2])
 #        print(rr[990],mr[990]/self.Msun)
         return np.round(rm,3)
     
 
     def plot(self,rr,mr,dd,tt):
 
+#        prf = pd.read_csv('starmodspy.out',delimiter=' ',skiprows=1,names=['r','Qm','L_r','M_r','TT','P','rho','kap','eps','clim','rcf','dlPdlT'])
+
+        prf = pd.read_csv('starmodspy.out',delimiter=' ')
+        
+        rr   = prf.r
+        dd   = prf.rho
+        tt   = prf.TT
+        mr   = prf.M_r
+
+        print(dd)
+        
         ii = len(rr)
         
         fig, ax1 = plt.subplots(figsize=(7,6))
